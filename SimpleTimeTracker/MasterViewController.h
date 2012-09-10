@@ -7,13 +7,20 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "TaskCell.h"
+#import "TaskWorkInterval.h"
 
 @class DetailViewController;
 
 #import <CoreData/CoreData.h>
 
-@interface MasterViewController : UITableViewController <NSFetchedResultsControllerDelegate>
+@interface MasterViewController : UITableViewController <NSFetchedResultsControllerDelegate, UIAlertViewDelegate>
+{
+    TaskCell* activeCell;
+    NSTimer* _updateTimer;
+}
 
+@property (nonatomic, retain) NSTimer* updateTimer;
 @property (strong, nonatomic) DetailViewController *detailViewController;
 
 @property (strong, nonatomic) NSFetchedResultsController *fetchedResultsController;

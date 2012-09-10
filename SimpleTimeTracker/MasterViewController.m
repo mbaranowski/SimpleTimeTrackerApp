@@ -19,6 +19,7 @@
 @synthesize detailViewController = _detailViewController;
 @synthesize fetchedResultsController = __fetchedResultsController;
 @synthesize managedObjectContext = __managedObjectContext;
+@synthesize updateTimer;
 
 - (void)awakeFromNib
 {
@@ -38,11 +39,22 @@
     UIBarButtonItem *addButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAdd target:self action:@selector(insertNewObject:)];
     self.navigationItem.rightBarButtonItem = addButton;
     self.detailViewController = (DetailViewController *)[[self.splitViewController.viewControllers lastObject] topViewController];
+    
+    self.updateTimer = [NSTimer scheduledTimerWithTimeInterval:1.0f target:self selector:@selector(updateTimerTick:) userInfo:nil repeats:YES];
+}
+
+- (void)updateTimerTick:(id)sender
+{
+    [self.tableView reloadData];
 }
 
 - (void)viewDidUnload
 {
     [super viewDidUnload];
+    
+    [self.updateTimer invalidate];
+    self.updateTimer = nil;
+    
     // Release any retained subviews of the main view.
 }
 
@@ -57,21 +69,66 @@
 
 - (void)insertNewObject:(id)sender
 {
+    
+    
+    UIAlertView * alert = [[UIAlertView alloc] initWithTitle:@"New Task" 
+                                                     message:@"Specify Task Title"
+                                                    delegate:self
+                                           cancelButtonTitle:@"Ok"
+                                           otherButtonTitles:@"Cancel", nil];
+    alert.alertViewStyle = UIAlertViewStylePlainTextInput;
+    [alert show];
+}
+
+- (void)addNewTask:(NSString*)title
+{
     NSManagedObjectContext *context = [self.fetchedResultsController managedObjectContext];
     NSEntityDescription *entity = [[self.fetchedResultsController fetchRequest] entity];
-    NSManagedObject *newManagedObject = [NSEntityDescription insertNewObjectForEntityForName:[entity name] inManagedObjectContext:context];
+    Task *task = [NSEntityDescription insertNewObjectForEntityForName:[entity name] inManagedObjectContext:context];
     
     // If appropriate, configure the new managed object.
     // Normally you should use accessor methods, but using KVC here avoids the need to add a custom class to the template.
-    [newManagedObject setValue:[NSDate date] forKey:@"timeStamp"];
+    task.timeStamp = [NSDate date];
+    task.title = title;
+    task.active = FALSE;
+    task.totalElapsed = 0;
+    task.timeLastStarted = nil;
     
     // Save the context.
     NSError *error = nil;
     if (![context save:&error]) {
-         // Replace this implementation with code to handle the error appropriately.
-         // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development. 
+        // Replace this implementation with code to handle the error appropriately.
+        // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development. 
         NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
         abort();
+    }
+}
+
+- (BOOL)saveContext
+{
+    NSError *error = nil;
+    if (![self.managedObjectContext save:&error]) 
+    {
+        NSLog(@"ERROR %@, %@", error, [error userInfo]);
+        UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Sorry"
+                              
+                                                        message:@"Error Saving the Data" 
+                                                       delegate:nil 
+                                              cancelButtonTitle:@"OK"
+                                              otherButtonTitles:nil];
+        
+        [alert show];        
+        return NO;
+    }
+    return YES;
+}
+
+- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
+{
+    NSLog(@"Entered: %@ button %d",[[alertView textFieldAtIndex:0] text], buttonIndex);
+    if (buttonIndex == 0) {
+        NSString* title = [[alertView textFieldAtIndex:0] text];
+        [self addNewTask:title];
     }
 }
 
@@ -90,8 +147,11 @@
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"Cell"];
+    TaskCell *cell = [tableView dequeueReusableCellWithIdentifier:@"TaskCell"];
     [self configureCell:cell atIndexPath:indexPath];
+    
+    [cell.actionButton addTarget:self action:@selector(taskActionButton:) forControlEvents:UIControlEventTouchUpInside];
+
     return cell;
 }
 
@@ -126,7 +186,7 @@
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
     if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad) {
-        NSManagedObject *object = [[self fetchedResultsController] objectAtIndexPath:indexPath];
+        Task *object = [[self fetchedResultsController] objectAtIndexPath:indexPath];
         self.detailViewController.detailItem = object;
     }
 }
@@ -135,7 +195,7 @@
 {
     if ([[segue identifier] isEqualToString:@"showDetail"]) {
         NSIndexPath *indexPath = [self.tableView indexPathForSelectedRow];
-        NSManagedObject *object = [[self fetchedResultsController] objectAtIndexPath:indexPath];
+        Task *object = [[self fetchedResultsController] objectAtIndexPath:indexPath];
         [[segue destinationViewController] setDetailItem:object];
     }
 }
@@ -150,7 +210,7 @@
     
     NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] init];
     // Edit the entity name as appropriate.
-    NSEntityDescription *entity = [NSEntityDescription entityForName:@"Event" inManagedObjectContext:self.managedObjectContext];
+    NSEntityDescription *entity = [NSEntityDescription entityForName:@"Task" inManagedObjectContext:self.managedObjectContext];
     [fetchRequest setEntity:entity];
     
     // Set the batch size to a suitable number.
@@ -239,10 +299,28 @@
 }
  */
 
-- (void)configureCell:(UITableViewCell *)cell atIndexPath:(NSIndexPath *)indexPath
+- (void)configureCell:(TaskCell *)cell atIndexPath:(NSIndexPath *)indexPath
 {
-    NSManagedObject *object = [self.fetchedResultsController objectAtIndexPath:indexPath];
-    cell.textLabel.text = [[object valueForKey:@"timeStamp"] description];
+    Task *object = [self.fetchedResultsController objectAtIndexPath:indexPath];
+    cell.task = object;
+    cell.title.text = [[object valueForKey:@"title"] description];
+    
+    NSString* backgroundImage = cell.task.active ? @"TaskCellSelected.png" : @"TaskCellDefault.png";
+    
+    cell.backgroundView = [[UIImageView alloc] initWithImage:[ [UIImage imageNamed:backgroundImage] stretchableImageWithLeftCapWidth:0.0   topCapHeight:5.0] ];
+    
+    cell.elapsed.textColor = cell.task.active ? [UIColor blueColor] : [UIColor grayColor];
+
+    NSString* imageName = cell.task.active ? @"Pause.png" : @"Play.png";    
+    [cell.actionButton setImage:[UIImage imageNamed:imageName] forState:UIControlStateNormal];
+    
+    [cell updateElapsedLabel:nil];
+}
+
+- (void)taskActionButton:(id)sender
+{
+    TaskCell* customCell = (TaskCell*)[[sender superview] superview];
+    [customCell.task toggleActive];
 }
 
 @end

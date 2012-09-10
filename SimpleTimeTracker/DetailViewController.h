@@ -7,11 +7,31 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "Task.h"
+#import "TaskDetailCell.h"
+#import "TaskWorkIntervalCell.h"
 
-@interface DetailViewController : UIViewController <UISplitViewControllerDelegate>
+@interface DetailViewController : UITableViewController <UISplitViewControllerDelegate, UITextViewDelegate>
+{
+    NSArray* _taskIntervals;
+    UIView* _accessoryView;
+    UITextView* _notesTextView;
+    NSTimer* _updateTimer;
+    TaskDetailCell* _taskDetailCell;
+}
 
-@property (strong, nonatomic) id detailItem;
+@property (nonatomic, retain) TaskDetailCell* taskDetailCell;
+@property (nonatomic, retain) NSTimer* updateTimer;
+@property (nonatomic, retain) NSArray* taskIntervals;
+@property (strong, nonatomic) Task* detailItem;
 
 @property (strong, nonatomic) IBOutlet UILabel *detailDescriptionLabel;
+@property (nonatomic, assign) IBOutlet UIView *accessoryView;
+@property (nonatomic, assign) UITextView* notesTextView;
+
+- (IBAction)keyboardDone:(id)sender;
+
+
+- (void)textViewDidChange:(UITextView *)textView;
 
 @end

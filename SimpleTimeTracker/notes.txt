@@ -1,0 +1,24 @@
+iPhone SimpleTimeTracker app
+
+- created new app from the Master Detail Application template.
+- added new fields to CoreData model
+- edited existing method in MasterViewController:(void)insertNewObject:(id)sender to call UIAlerView initWithTitle to present a dialog where you can enter task title
+- added UIAlertViewDelegate to MasterViewController interfaces
+- implemented (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex which adds new NSManagedObject 
+- modify existing method configureCell to set label to object title.
+- create custom uitableviewcell
+	in storyboard view, select Table View Cell
+	set style to Custom in Attributes inspector
+	specify new identifier for the cell "TaskCell"
+	(video explains custom table cells: http://www.youtube.com/watch?v=l3zhn_R-jtw)
+	add new files called TaskCell.h/.m which is a UITableViewCell subclass
+	drag up elements into prototype cell in story board
+	
+	in TaskCell.h for each ui element add property like this:
+		@property (nonatomic, weak) IBOutlet UILabel* title;
+	in TaskCell.m for each ui element add @synthesize title; etc.
+
+	in MasterViewController.h add #import "TaskCell.h" at the top
+	in MasterViewController.m in function tableView:cellForRowAtIndexPath
+		change cell identifier to "TaskCell"
+		change class to TaskCell
