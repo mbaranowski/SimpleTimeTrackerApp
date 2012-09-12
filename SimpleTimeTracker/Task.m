@@ -50,13 +50,13 @@ static NSDateFormatter* sDateFormatter;
         num = num - (hr * 3600);
         int min = num / 60;
         int sec = num - (min * 60);
-        return [NSString stringWithFormat:@"%d hr %d min %d sec", hr, min, sec];       
+        return [NSString stringWithFormat:@"%dhr %dmin %dsec", hr, min, sec];
     } else if (num > 60) {
         int min = num / 60;
         int sec = num - (min * 60);
-        return [NSString stringWithFormat:@"%d min %d sec", min, sec];
+        return [NSString stringWithFormat:@"%dmin %dsec", min, sec];
     } else {
-        return [NSString stringWithFormat:@"%d sec", num];
+        return [NSString stringWithFormat:@"%dsec", num];
     }
 }
 -(NSString*)formattedElapsedTime
