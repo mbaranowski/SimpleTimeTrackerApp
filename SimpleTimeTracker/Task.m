@@ -99,9 +99,7 @@ static NSDateFormatter* sDateFormatter;
     interval.start = self.timeLastStarted;
     interval.end = [NSDate date];
     
-    [self addIntervalsObject: interval];
-    
-    NSLog(@"addNewIntervalForTask intervals:%d", [self.intervals count]);
+    [self addIntervalsObject: interval];    
 }
 
 @end
